@@ -1,8 +1,9 @@
 # ktor-daily-doc
 
 Ktor server for Daily Doc project. 
+https://github.com/B-Lidberg/DailyDoc
 
-In progress
+In progress...
 
 -----------------------------
 
