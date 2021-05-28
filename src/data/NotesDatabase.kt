@@ -5,6 +5,7 @@ import com.lid.data.collections.User
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
+import org.litote.kmongo.setValue
 
 private val client = KMongo.createClient().coroutine
 private val database = client.getDatabase("NotesDatabase")
@@ -35,4 +36,19 @@ suspend fun saveNote(note: Note): Boolean {
     } else {
         notes.insertOne(note).wasAcknowledged()
     }
+}
+
+suspend fun isOwnerOfNote(username: String, noteId: String): Boolean {
+    val note = notes.findOneById(noteId) ?: return false
+    return username in note.owner
+}
+
+suspend fun isUserOfNote(username: String, noteId: String): Boolean {
+    val note = notes.findOneById(noteId) ?: return false
+    return username in note.users
+}
+
+suspend fun addUserToNote(username: String, noteId: String): Boolean {
+    val users = notes.findOneById(noteId)?.users ?: return false
+    return notes.updateOneById(noteId, setValue(Note::users, users + username)).wasAcknowledged()
 }
