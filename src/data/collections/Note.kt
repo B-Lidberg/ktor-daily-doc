@@ -5,7 +5,7 @@ import org.bson.types.ObjectId
 
 data class Note(
     @BsonId
-    val id: String = ObjectId().toString(),
+    val noteId: String = ObjectId().toString(),
     val date: Long,
     val summary: String,
     val content: String,

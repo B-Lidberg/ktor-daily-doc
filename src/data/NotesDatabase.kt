@@ -2,6 +2,8 @@ package com.lid.data
 
 import com.lid.data.collections.Note
 import com.lid.data.collections.User
+import org.litote.kmongo.MongoOperator
+import org.litote.kmongo.contains
 import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
@@ -30,9 +32,9 @@ suspend fun getNotesForUser(username: String): List<Note> {
 }
 
 suspend fun saveNote(note: Note): Boolean {
-    val noteExists = notes.findOneById(note.id) != null
+    val noteExists = notes.findOneById(note.noteId) != null
     return if (noteExists) {
-        notes.updateOneById(note.id, note).wasAcknowledged()
+        notes.updateOneById(note.noteId, note).wasAcknowledged()
     } else {
         notes.insertOne(note).wasAcknowledged()
     }
@@ -51,4 +53,23 @@ suspend fun isUserOfNote(username: String, noteId: String): Boolean {
 suspend fun addUserToNote(username: String, noteId: String): Boolean {
     val users = notes.findOneById(noteId)?.users ?: return false
     return notes.updateOneById(noteId, setValue(Note::users, users + username)).wasAcknowledged()
+}
+
+suspend fun deleteNoteForUser(email: String, noteId: String): Boolean {
+    val note = notes.findOne(
+        Note::noteId eq noteId,
+        Note::users contains email
+    )
+    note?.let { note ->
+        if (note.users.size > 1) {
+            // the note has multiple owners, so we just delete the email from the owners list
+            val newOwners = note.users - email
+            val updateResult = notes.updateOne(
+                filter = Note::noteId eq MongoOperator.id,
+                setValue(Note::users, newOwners)
+            )
+            return updateResult.wasAcknowledged()
+        }
+        return notes.deleteOneById(MongoOperator.id).wasAcknowledged()
+    } ?: return false
 }

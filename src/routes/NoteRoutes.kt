@@ -3,6 +3,7 @@ package com.lid.routes
 import com.lid.data.*
 import com.lid.data.collections.Note
 import com.lid.data.requests.AddUserRequest
+import com.lid.data.requests.DeleteNoteRequest
 import com.lid.responses.SimpleResponse
 import io.ktor.application.*
 import io.ktor.auth.*
@@ -58,7 +59,7 @@ fun Route.noteRoutes() {
                     )
                     return@post
                 }
-                if (isOwnerOfNote(request.owner, request.id)) {
+                if (isOwnerOfNote(request.user, request.id)) {
                     call.respond(
                         OK,
                         SimpleResponse(false, "You cannot assign yourself!")
@@ -77,6 +78,24 @@ fun Route.noteRoutes() {
                         OK,
                         SimpleResponse(true, "${request.user} can now view this note!")
                     )
+                } else {
+                    call.respond(Conflict)
+                }
+            }
+        }
+    }
+    route("/deleteNote") {
+        authenticate {
+            post {
+                val email = call.principal<UserIdPrincipal>()!!.name
+                val request = try {
+                    call.receive<DeleteNoteRequest>()
+                } catch(e: ContentTransformationException) {
+                    call.respond(BadRequest)
+                    return@post
+                }
+                if (deleteNoteForUser(email, request.id)) {
+                    call.respond(OK)
                 } else {
                     call.respond(Conflict)
                 }
