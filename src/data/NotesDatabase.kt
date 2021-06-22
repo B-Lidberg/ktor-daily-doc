@@ -8,9 +8,13 @@ import org.litote.kmongo.coroutine.coroutine
 import org.litote.kmongo.eq
 import org.litote.kmongo.reactivestreams.KMongo
 import org.litote.kmongo.setValue
-
-private val client = KMongo.createClient().coroutine
-private val database = client.getDatabase("NotesDatabase")
+/*
+If testing on local machine only through emulator or physical device.
+remove connectionString from KMongo.createClient. I have it set up to run on wifi.
+ plus testing for future server potential!
+ */
+private val client = KMongo.createClient("mongodb+srv://DailyDocUser:xpvgg2W238Tf7mfA@dailydocdatabase.z622f.mongodb.net").coroutine
+private val database = client.getDatabase("DailyDocDatabase")
 private val users = database.getCollection<User>()
 private val notes = database.getCollection<Note>()
 
@@ -56,13 +60,12 @@ suspend fun addUserToNote(username: String, noteId: String): Boolean {
 }
 
 suspend fun deleteNoteForUser(email: String, noteId: String): Boolean {
-    val note = notes.findOne(
+    val noteFromDb = notes.findOne(
         Note::noteId eq noteId,
         Note::users contains email
     )
-    note?.let { note ->
+    noteFromDb?.let { note ->
         if (note.users.size > 1) {
-            // the note has multiple owners, so we just delete the email from the owners list
             val newOwners = note.users - email
             val updateResult = notes.updateOne(
                 filter = Note::noteId eq MongoOperator.id,
